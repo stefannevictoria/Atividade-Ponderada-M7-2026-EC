@@ -7,10 +7,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 PASTA_DADOS = RAIZ / "data"
 PASTA_DADOS.mkdir(parents=True, exist_ok=True)
 
-# A data final é exclusiva: coleta até 30/09/2026.
+# A data final é exclusiva: não inclui a cotação parcial de 05/10.
 dados = yf.Ticker("BRL=X").history(
     start="2023-01-01",
-    end="2026-10-01",
+    end="2026-10-05",
     interval="1d",
     auto_adjust=False,
 )

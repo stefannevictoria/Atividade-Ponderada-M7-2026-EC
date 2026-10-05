@@ -1,0 +1,14 @@
+{
+  "modelo": "Prophet",
+  "avaliacao": "Walk-forward com janela expansiva: retreino antes de prever cada próxima observação do teste.",
+  "registros_validos": 975,
+  "registros_treino_inicial": 955,
+  "registros_teste": 20,
+  "inicio_teste": "2026-09-07",
+  "fim_teste": "2026-10-02",
+  "mae_prophet": 0.11103500670385427,
+  "mae_naive": 0.021770000457763672,
+  "unidade": "BRL por USD",
+  "fim_historico": "2026-10-02",
+  "modelo_final": "Treinado com todo o histórico válido."
+}
