@@ -1,63 +1,69 @@
 # Atividade-Ponderada-M7-2026-EC
-Repositório para a criação da atividade ponderada de EC 2026 - M7.
 
-## Atividade ponderada: modelo de predição com Docker
+**Nome:** Stefanne Victória Andrade Soares
 
-**Duração total: 100 minutos**
+## Objetivo e escolhas iniciais
 
-### Desafio
+Esta atividade tem como objetivo desenvolver uma solução para estimar a cotação futura do **dólar** em reais, utilizando dados históricos do [Yahoo Finance](https://finance.yahoo.com/quote/BRL%3DX/history/?period1=1672531200&period2=1791221071). 
 
-Construa e documente uma solução conteinerizada que treine um modelo para estimar o valor futuro de uma moeda, como o Bitcoin, a partir de dados históricos. O treinamento deve ser executado em um container Docker ou em um notebook. Ao final, o modelo treinado deve ser disponibilizado em um segundo container, que executará um backend para carregá-lo e oferecer predições à aplicação.
+- **Fonte dos dados:** Yahoo Finance, ticker [`USDBRL=X`](https://finance.yahoo.com/quote/BRL%3DX/history/?period1=1672531200&period2=1791221071).
+- **Período e frequência:** diário, a partir de 01/01/2023 até 05/10/2026.
+- **Colunas baixadas:** `date` e `close`.
 
-O backend deve ser implementado obrigatoriamente em Python. A escolha das bibliotecas e da abordagem de modelagem é livre. O objetivo não é produzir uma previsão financeira confiável para uso real, mas demonstrar a integração entre treinamento, artefato do modelo, container de inferência e aplicação.
 
-### O que fazer
+## Arquitetura 
+```mermaid
+sequenceDiagram
+    participant C as Cliente / terminal
+    participant D as CSV histórico
+    participant T as Container de treinamento
+    participant A as Artefato modelo.json
+    participant B as Container do backend
 
-1. **Desenhar a arquitetura:** faça um esboço UML que represente os componentes da solução e a troca de dados entre eles. Inclua, no mínimo, o ambiente de treinamento, o artefato gerado pelo modelo, o container de inferência/backend e a aplicação cliente. Indique como o modelo treinado chega ao container de inferência.
-2. **Treinar e exportar o modelo:** execute o treinamento em um container Docker ou notebook e salve o modelo em um formato que possa ser carregado posteriormente.
-3. **Preparar a inferência:** implemente em Python o backend do container de inferência. Ele deve carregar o artefato treinado e disponibilizar uma operação para solicitar uma predição. Inclua também uma forma simples de verificar se o serviço está ativo.
-4. **Integrar e testar:** execute os componentes necessários e demonstre que uma solicitação chega ao backend e retorna uma predição. Registre os comandos usados e os resultados observados.
-5. **Manter o devlog:** documente, ao longo do desenvolvimento, as decisões, etapas realizadas, dificuldades, alterações e testes. Inclua o diagrama UML e evidências suficientes para outra pessoa compreender e reproduzir a solução.
+    Note over C,D: Coleta prévia via coletar_dados.py e Yahoo Finance
+    C->>T: Iniciar treinamento
+    T->>D: Ler dolar.csv
+    D-->>T: Datas e fechamentos
+    T->>T: Preparar dados e separar treino/teste
+    T->>T: Treinar Prophet e avaliar
+    T->>A: Salvar modelo.json
+    Note over T,A: Pasta artifacts montada com permissão de escrita
+    T-->>C: Informar métricas e caminho do artefato
 
-### Organização sugerida do tempo
+    Note over A,B: Iniciar backend após gerar o modelo
+    Note over A,B: Mesma pasta artifacts montada somente para leitura
+    B->>A: Carregar modelo.json ao iniciar
+    A-->>B: Modelo treinado
 
-- **0–15 min:** compreender o desafio, escolher a abordagem e desenhar o esboço UML.
-- **15–55 min:** preparar os dados, treinar o modelo e exportar o artefato.
-- **55–85 min:** implementar e executar o backend de inferência em Python/Docker; testar a comunicação.
-- **85–100 min:** concluir o devlog e apresentar a solução e as evidências.
+    C->>B: GET /health
+    B-->>C: Status do serviço
+    C->>B: POST /predict com a data desejada
+    B->>B: Executar predição com Prophet
+    B-->>C: Data e cotação estimada em BRL por USD
+```
+O diagrama representa o fluxo entre treinamento e inferência que será realizado. O container de treinamento lê o CSV histórico do dólar (baixado por um script pelo site do Yahoo), prepara os dados, separa treino e teste cronologicamente e treina o Prophet. Depois, salva o modelo em JSON na pasta artifacts. O container do backend acessa essa pasta somente para leitura e carrega o modelo ao iniciar. O usuário (cliente) pode verificar se o serviço está ativo e enviar uma data para receber a cotação estimada, sem executar novamente o treinamento.
 
-A distribuição é uma referência; reserve tempo para registrar o devlog durante todo o processo, não apenas no final.
 
-### Entregáveis
+## Modelo
 
-- Esboço UML da arquitetura e do fluxo do modelo entre os componentes.
-- Código do treinamento e do backend em Python.
-- Arquivos necessários para executar os containers, como `Dockerfile` e configuração de serviços, quando aplicável.
-- Artefato do modelo treinado, ou instruções claras para gerá-lo novamente.
-- Devlog com decisões, comandos, testes, dificuldades e evidências da execução.
-- Demonstração de uma predição obtida pelo backend.
+> **Aviso:** Os códigos de scripts e outros foram desenvolvidos principalmente com o auxílio de Inteligência Artificial (IA) para aumentar a eficiência e manter o foco na lógica de desenvolvimento da atividade. 
 
-Atenção: Toda entrega deve acontecer no Github (o link de um repostório seu para isso).
+O modelo escolhido foi o Prophet pois é uma ferramenta voltada à previsão de séries temporais e foi o sugerido pelo professor Murilo. Ele permite treinar com datas e valores históricos e exportar o modelo para uso no backend.
 
-### Avaliação
+Seguindo a arquitetura acima, foi criado um script `scripts/coletar_dados.py` para baixar os dados históricos da cotação do dólar diretamente do site Yahoo Finance, dentro do período definido (01/01/2023 até 05/10/2026). Após isso, foi criado o script `scripts/treinar.py` que realiza o treinamento do modelo, avalia e salva métricas e previsões de teste. 
 
-- **40% — Solução funcionando:** treinamento executado, artefato do modelo gerado e carregado no container de inferência, backend Python acessível e predição demonstrada.
-- **40% — Devlog:** clareza e sequência dos registros, justificativa das decisões, descrição dos testes e dificuldades, evidências e instruções que permitam compreender e reproduzir o trabalho.
-- **20% — Observações do professor:** acompanhamento do processo, participação, autonomia, colaboração e capacidade de explicar as escolhas e resolver problemas durante o desenvolvimento.
+O treinamento foi colocado em um container para executar com o código e as dependências definidos na imagem. Os resultados são salvos em uma pasta compartilhada, permitindo que o backend carregue o modelo depois, sem precisar treinar ele de novo.
 
-### Critérios para a demonstração
+Separei os dados cronologicamente em 80% para treino e 20% para teste e calculei o MAE. Depois, treinei o modelo final com todo o histórico disponível para disponibilizá-lo no backend.
 
-Na apresentação final, mostre o diagrama UML, explique como o artefato do modelo é transferido ou disponibilizado ao container de inferência e faça ao menos uma solicitação ao backend. Informe também limitações conhecidas da solução. As predições produzidas são experimentais e não devem ser interpretadas como recomendação de investimento.
+### Execução: 
 
-### Sugestão de Fontes de Dados
+1. No terminal, na raiz do projeto, construa a imagem:
 
-- [Yahoo Finance](https://finance.yahoo.com/quote/BTC-USD/history/): histórico de preços de BTC-USD, com opção de baixar dados diários em CSV. Em Python, pode ser acessado pela biblioteca `yfinance`; depende de conexão com a internet.
-- [CryptoDataDownload](https://www.cryptodatadownload.com/): arquivos CSV históricos de diferentes criptomoedas e exchanges. É uma opção prática para evitar configurar uma API durante a atividade.
-- [Kaggle Datasets](https://www.kaggle.com/datasets): reúne conjuntos de dados históricos de Bitcoin e outras moedas. A qualidade varia; confira a origem, o período, a frequência e as colunas antes de usar.
-- [Binance Spot API](https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints): permite consultar candles de mercado, com preços de abertura, máxima, mínima e fechamento, além de volume. É útil para praticar coleta por API, mas requer mais configuração.
-- [CoinGecko API](https://docs.coingecko.com/): oferece preços e outras métricas de mercado. Verifique os limites e requisitos de acesso do plano disponível antes de definir essa fonte para a atividade.
-- [Google Dataset Search](https://datasetsearch.research.google.com/): buscador para encontrar conjuntos de dados publicados em diferentes repositórios.
+```
+docker build -f Dockerfile.treino -t dolar-treino:1.0 .
+```
 
-**Recomendação:** para manter o foco nos containers, no modelo e no backend dentro dos 100 minutos, prefira fornecer ou indicar um CSV pronto com data, preço de fechamento e, se desejado, volume. Defina previamente a moeda, o período e a frequência dos dados. Para a previsão, especifique também o horizonte, por exemplo, estimar o preço de fechamento do dia seguinte. Como se trata de uma série temporal, os dados de treino e teste devem ser separados cronologicamente, sem embaralhar as linhas. A precisão do modelo não vai ser um critério punitivo, mas pode ser um diferencial levado em consideração.
+
 
 
