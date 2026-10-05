@@ -151,3 +151,8 @@ curl -X POST http://localhost:8000/predict \
 ``` 
 
 ![resultado back](assets/backend.png)
+
+
+## DevLog 
+
+O DevLog pode ser acessado em: [devlog.md](devlog.md)

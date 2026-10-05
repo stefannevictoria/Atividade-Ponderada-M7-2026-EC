@@ -73,6 +73,6 @@
 
 ![resultado back](assets/backend.png)
 
-- Com essa resposta, confirmei que a solicitação chegou ao backend e retornou uma previsão usando o modelo salvo. Usei o terminal como cliente para demonstrar essa comunicação.
+- Com essa resposta confirmei que a solicitação chegou ao backend e retornou uma previsão usando o modelo salvo. Usei o terminal como cliente para demonstrar essa comunicação 
 
 - Por fim, atualizei o README com as explicações do modelo e do backend, os comandos e as evidências. O modelo usa somente o histórico de cotações, sem considerar notícias e outros fatores que afetam o dóla
